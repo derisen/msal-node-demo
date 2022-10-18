@@ -2,7 +2,6 @@
 // Licensed under the MIT License
 
 const { contextBridge, ipcRenderer } = require('electron');
-const { IPC_MESSAGES } = require('./constants');
 
 /**
  * This preload script exposes a "renderer" API to give
@@ -12,18 +11,18 @@ const { IPC_MESSAGES } = require('./constants');
  */
 contextBridge.exposeInMainWorld('renderer', {
     sendLoginMessage: () => {
-        ipcRenderer.send(IPC_MESSAGES.LOGIN);
+        ipcRenderer.send('LOGIN');
     },
     sendLogoutMessage: () => {
-        ipcRenderer.send(IPC_MESSAGES.LOGOUT);
+        ipcRenderer.send('LOGOUT');
     },
     sendSeeProfileMessage: () => {
-        ipcRenderer.send(IPC_MESSAGES.GET_PROFILE);
+        ipcRenderer.send('GET_PROFILE');
     },
     setProfileData: (func) => {
-        ipcRenderer.on(IPC_MESSAGES.SET_PROFILE, (event, data) => func(event, data));
+        ipcRenderer.on('SET_PROFILE', (event, data) => func(event, data));
     },
     showWelcomeMessage: (func) => {
-        ipcRenderer.on(IPC_MESSAGES.SHOW_WELCOME_MESSAGE, (event, data) => func(event, data));
+        ipcRenderer.on('SHOW_WELCOME_MESSAGE', (event, data) => func(event, data));
     },
 });

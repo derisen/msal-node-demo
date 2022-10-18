@@ -6,8 +6,6 @@
 const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
-const { IPC_MESSAGES } = require("./constants");
-
 let mainWindow;
 
 const createWindow = () => {
@@ -48,17 +46,17 @@ app.on('activate', () => {
 
 /* EVENT HANDLERS */
 
-ipcMain.on(IPC_MESSAGES.LOGIN, async () => {
+ipcMain.on('LOGIN', async () => {
     // add login logic here
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
     mainWindow.show();
     
-    mainWindow.webContents.send(IPC_MESSAGES.SHOW_WELCOME_MESSAGE, null);
+    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
 });
 
-ipcMain.on(IPC_MESSAGES.LOGOUT, async () => {
+ipcMain.on('LOGOUT', async () => {
     // add logout logic here
 
     // update ui
@@ -66,15 +64,15 @@ ipcMain.on(IPC_MESSAGES.LOGOUT, async () => {
     mainWindow.show();
 });
 
-ipcMain.on(IPC_MESSAGES.GET_PROFILE, async () => {
+ipcMain.on('GET_PROFILE', async () => {
     // add get token logic here
 
     // add call graph logic here
 
     // update ui
-    mainWindow.loadFile(path.join(__dirname, "./index.html"));
+    await mainWindow.loadFile(path.join(__dirname, "./index.html"));
     mainWindow.show();
 
-    mainWindow.webContents.send(IPC_MESSAGES.SHOW_WELCOME_MESSAGE, null);
-    mainWindow.webContents.send(IPC_MESSAGES.SET_PROFILE, null);
+    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
+    mainWindow.webContents.send('SET_PROFILE', null);
 });

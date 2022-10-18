@@ -3,13 +3,29 @@
  * file in order to give the renderer access to the Node API in a secure and 
  * controlled way
  */
-const welcomeDiv = document.getElementById('WelcomeMessage');
-const signInButton = document.getElementById('signIn');
-const signOutButton = document.getElementById('signOut');
+const welcomeDiv = document.getElementById('WelcomeMessageDiv');
 const cardDiv = document.getElementById('cardDiv');
 const profileDiv = document.getElementById('profileDiv');
+const signInButton = document.getElementById('signIn');
+const signOutButton = document.getElementById('signOut');
+const seeProfileButton = document.getElementById('seeProfile');
 
-api.renderer.showWelcomeMessage((event, account) => {
+// UI event handlers
+signInButton.addEventListener('click', () => {
+    window.renderer.sendLoginMessage();
+});
+
+signOutButton.addEventListener('click', () => {
+    window.renderer.sendLogoutMessage();
+});
+
+seeProfileButton.addEventListener('click', () => {
+    window.renderer.sendSeeProfileMessage();
+});
+
+window.renderer.showWelcomeMessage((event, account) => {
+    if (!account) return;
+
     cardDiv.style.display = 'initial';
     welcomeDiv.innerHTML = `Welcome ${account.name}`;
     signInButton.hidden = true;
@@ -17,7 +33,7 @@ api.renderer.showWelcomeMessage((event, account) => {
 });
 
 window.renderer.setProfileData((event, graphResponse) => {
-    if (!graphResponse) return null;
+    if (!graphResponse) return;
 
     console.log(`Graph API responded at: ${new Date().toString()}`);
 
@@ -37,17 +53,4 @@ window.renderer.setProfileData((event, graphResponse) => {
     profileDiv.appendChild(email);
     profileDiv.appendChild(phone);
     profileDiv.appendChild(address);
-});
-
-// UI event handlers
-document.querySelector('#signIn').addEventListener('click', () => {
-    window.renderer.sendLoginMessage();
-});
-
-document.querySelector('#signOut').addEventListener('click', () => {
-    window.renderer.sendLogoutMessage();
-});
-
-document.querySelector('#seeProfile').addEventListener('click', () => {
-    window.renderer.sendSeeProfileMessage();
 });

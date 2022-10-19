@@ -7,10 +7,8 @@ const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
 const AuthProvider = require("./AuthProvider");
-const getGraphClient = require("./graph");
-const { msalConfig, protectedResources } = require("./authConfig");
 
-const authProvider = new AuthProvider(msalConfig);
+const authProvider = new AuthProvider();
 let mainWindow;
 
 const createWindow = () => {
@@ -22,16 +20,11 @@ const createWindow = () => {
         },
     });
 
-    mainWindow.on('show', () => {
-        setTimeout(() => {
-            mainWindow.focus();
-        }, 200); // in case of any race conditions
-    });
+    mainWindow.loadFile(path.join(__dirname, "./index.html"))
 };
 
 app.on("ready", () => {
     createWindow();
-    mainWindow.loadFile(path.join(__dirname, "./index.html")).then(() => mainWindow.show());
 });
 
 
@@ -56,8 +49,7 @@ ipcMain.on('LOGIN', async () => {
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
-    mainWindow.show();
-
+    
     mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
 });
 
@@ -66,12 +58,11 @@ ipcMain.on('LOGOUT', async () => {
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"))
-    mainWindow.show();
 });
 
 ipcMain.on('GET_PROFILE', async () => {
     const tokenResponse = await authProvider.getToken({
-        scopes: protectedResources.graphMe.scopes
+        scopes: ["User.Read"]
     });
 
     try {
@@ -79,7 +70,6 @@ ipcMain.on('GET_PROFILE', async () => {
 
         // update ui
         await mainWindow.loadFile(path.join(__dirname, "./index.html"));
-        mainWindow.show();
 
         mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
         mainWindow.webContents.send('SET_PROFILE', graphResponse);

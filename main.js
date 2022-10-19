@@ -7,6 +7,7 @@ const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
 const AuthProvider = require("./AuthProvider");
+const getGraphClient = require("./graph");
 const { msalConfig, protectedResources } = require("./authConfig");
 
 const authProvider = new AuthProvider(msalConfig);
@@ -73,14 +74,16 @@ ipcMain.on('GET_PROFILE', async () => {
         scopes: protectedResources.graphMe.scopes
     });
 
-    console.log(tokenResponse.accessToken);
+    try {
+        const graphResponse = await getGraphClient(tokenResponse.accessToken).api('/me').get();
 
-    // add call graph logic here
+        // update ui
+        await mainWindow.loadFile(path.join(__dirname, "./index.html"));
+        mainWindow.show();
 
-    // update ui
-    await mainWindow.loadFile(path.join(__dirname, "./index.html"));
-    mainWindow.show();
-
-    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
-    mainWindow.webContents.send('SET_PROFILE', null);
+        mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
+        mainWindow.webContents.send('SET_PROFILE', graphResponse);
+    } catch (error) {
+        console.log(error);
+    }
 });

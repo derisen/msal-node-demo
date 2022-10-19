@@ -17,16 +17,11 @@ const createWindow = () => {
         },
     });
 
-    mainWindow.on('show', () => {
-        setTimeout(() => {
-            mainWindow.focus();
-        }, 200); // in case of any race conditions
-    });
+    mainWindow.loadFile(path.join(__dirname, "./index.html"))
 };
 
 app.on("ready", () => {
     createWindow();
-    mainWindow.loadFile(path.join(__dirname, "./index.html")).then(() => mainWindow.show());
 });
 
 
@@ -51,7 +46,6 @@ ipcMain.on('LOGIN', async () => {
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
-    mainWindow.show();
     
     mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
 });
@@ -61,7 +55,6 @@ ipcMain.on('LOGOUT', async () => {
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"))
-    mainWindow.show();
 });
 
 ipcMain.on('GET_PROFILE', async () => {
@@ -71,7 +64,6 @@ ipcMain.on('GET_PROFILE', async () => {
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
-    mainWindow.show();
 
     mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
     mainWindow.webContents.send('SET_PROFILE', null);

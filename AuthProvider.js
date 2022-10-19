@@ -3,33 +3,60 @@
  * Licensed under the MIT License.
  */
 const { shell } = require('electron');
-const { PublicClientApplication } = require("@azure/msal-node");
+const { PublicClientApplication, InteractionRequiredAuthError, LogLevel } = require("@azure/msal-node");
 const { promises: { readFile } } = require("fs");
 const path = require("path");
 
-const { msalConfig } = require("./authConfig");
-
 class AuthProvider {
     clientApplication;
+    msalConfig;
     cache;
     account;
 
-    constructor(msalConfig) {
-        this.clientApplication = new PublicClientApplication(msalConfig);
+    constructor() {
+        this.msalConfig = {
+            auth: {
+                clientId: "ENTER_CLIENT_ID",
+                authority: `https://login.microsoftonline.com/ENTER_TENANT_ID`,
+            },
+            system: {
+                loggerOptions: {
+                    loggerCallback(loglevel, message, containsPii) {
+                        console.log(message);
+                    },
+                    piiLoggingEnabled: false,
+                    logLevel: LogLevel.Verbose,
+                },
+            },
+        };
+
+        this.clientApplication = new PublicClientApplication(this.msalConfig);
         this.cache = this.clientApplication.getTokenCache();
         this.account = null;
     }
 
-    async login(tokenRequest) {
-        const authResponse = await this.getToken(tokenRequest);
+    async login(loginRequest) {
+        try {
+            const openBrowser = async (url) => {
+                // you can also run custom code here
+                shell.openExternal(url);
+            };
 
-        if (authResponse !== null) {
+            const successTemplate = await readFile(path.join(__dirname, "./redirect.html"));
+
+            const authResponse = await this.clientApplication.acquireTokenInteractive({
+                ...loginRequest,
+                openBrowser,
+                successTemplate,
+                failureTemplate: '<h1>Oops! Something went wrong</h1> <p>Check the console for more information.</p>',
+            });
+
+            console.log(authResponse);
+
             this.account = authResponse.account;
-        } else {
-            this.account = await this.cache.getAllAccounts()[0];
+        } catch (error) {
+            console.log(error);
         }
-
-        return this.account;
     }
 
     async logout() {
@@ -38,57 +65,37 @@ class AuthProvider {
         try {
             await this.cache.removeAccount(this.account);
             this.account = null;
-            
-            await shell.openExternal(`${msalConfig.auth.authority}/oauth2/v2.0/logout`);
+
+            await shell.openExternal(`${this.msalConfig.auth.authority}/oauth2/v2.0/logout`);
         } catch (error) {
             console.log(error);
         }
     }
 
     async getToken(tokenRequest) {
-        let authResponse;
-        const account = this.account || (await this.cache.getAllAccounts())[0];
-
-        if (account) {
-            tokenRequest.account = account;
-            authResponse = await this.getTokenSilent(tokenRequest);
-        } else {
-            authResponse = await this.getTokenInteractive(tokenRequest);
-        }
-
-        return authResponse || null;
-    }
-
-    async getTokenSilent(tokenRequest) {
         try {
-            return await this.clientApplication.acquireTokenSilent(tokenRequest);
+            const authResponse = await this.clientApplication.acquireTokenSilent(tokenRequest);
+            return authResponse;
         } catch (error) {
-            console.log("Silent token acquisition failed, acquiring token using interactive");
-            return await this.getTokenInteractive(tokenRequest);
-        }
-    }
+            if (error instanceof InteractionRequiredAuthError) {
+                const openBrowser = async (url) => {
+                    // you can also run custom code here
+                    shell.openExternal(url);
+                };
 
-    async getTokenInteractive(tokenRequest) {
-        try {
+                const successTemplate = await readFile(path.join(__dirname, "./redirect.html"));
 
-            const openBrowser = async (url) => {
-                // you can use any library to open a browser window, such as `open` or `opn`
-                // you can also run custom code here
-                shell.openExternal(url);
-            };
+                const authResponse = await this.clientApplication.acquireTokenInteractive({
+                    ...tokenRequest,
+                    openBrowser,
+                    successTemplate,
+                    failureTemplate: '<h1>Oops! Something went wrong</h1> <p>Check the console for more information.</p>',
+                });
 
-            const successTemplate = await readFile(path.join(__dirname, "./redirect.html"));
+                return authResponse;
+            }
 
-            const authResult = await this.clientApplication.acquireTokenInteractive({
-                ...tokenRequest,
-                openBrowser,
-                successTemplate,
-                failureTemplate: '<h1>Oops! Something went wrong</h1> <p>Check the console for more information.</p>',
-            });
-
-            return authResult;
-        } catch (error) {
-            throw error;
+            console.log(error);
         }
     }
 }

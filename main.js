@@ -7,9 +7,8 @@ const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
 const AuthProvider = require("./AuthProvider");
-const { msalConfig, protectedResources } = require("./authConfig");
 
-const authProvider = new AuthProvider(msalConfig);
+const authProvider = new AuthProvider();
 let mainWindow;
 
 const createWindow = () => {
@@ -51,7 +50,7 @@ ipcMain.on('LOGIN', async () => {
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
     
-    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
+    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
 });
 
 ipcMain.on('LOGOUT', async () => {
@@ -63,7 +62,7 @@ ipcMain.on('LOGOUT', async () => {
 
 ipcMain.on('GET_PROFILE', async () => {
     const tokenResponse = await authProvider.getToken({
-        scopes: protectedResources.graphMe.scopes
+        scopes: ["User.Read"]
     });
 
     console.log(tokenResponse.accessToken);

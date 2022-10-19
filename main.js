@@ -6,6 +6,10 @@
 const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
+const AuthProvider = require("./AuthProvider");
+const { msalConfig, protectedResources } = require("./authConfig");
+
+const authProvider = new AuthProvider(msalConfig);
 let mainWindow;
 
 const createWindow = () => {
@@ -47,17 +51,17 @@ app.on('activate', () => {
 /* EVENT HANDLERS */
 
 ipcMain.on('LOGIN', async () => {
-    // add login logic here
+    await authProvider.login();
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
     mainWindow.show();
-    
-    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
+
+    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
 });
 
 ipcMain.on('LOGOUT', async () => {
-    // add logout logic here
+    await authProvider.logout();
 
     // update ui
     await mainWindow.loadFile(path.join(__dirname, "./index.html"))
@@ -65,7 +69,11 @@ ipcMain.on('LOGOUT', async () => {
 });
 
 ipcMain.on('GET_PROFILE', async () => {
-    // add get token logic here
+    const tokenResponse = await authProvider.getToken({
+        scopes: protectedResources.graphMe.scopes
+    });
+
+    console.log(tokenResponse.accessToken);
 
     // add call graph logic here
 
@@ -73,6 +81,6 @@ ipcMain.on('GET_PROFILE', async () => {
     await mainWindow.loadFile(path.join(__dirname, "./index.html"));
     mainWindow.show();
 
-    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', null);
+    mainWindow.webContents.send('SHOW_WELCOME_MESSAGE', authProvider.account);
     mainWindow.webContents.send('SET_PROFILE', null);
 });

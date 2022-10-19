@@ -7,6 +7,7 @@ const path = require("path");
 const { app, ipcMain, BrowserWindow } = require("electron");
 
 const AuthProvider = require("./AuthProvider");
+const getGraphClient = require("./graph");
 
 const authProvider = new AuthProvider();
 let mainWindow;
@@ -67,7 +68,8 @@ ipcMain.on('GET_PROFILE', async () => {
 
     try {
         const graphResponse = await getGraphClient(tokenResponse.accessToken).api('/me').get();
-
+        console.log(graphResponse);
+        
         // update ui
         await mainWindow.loadFile(path.join(__dirname, "./index.html"));
 

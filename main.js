@@ -63,7 +63,8 @@ ipcMain.on('LOGOUT', async () => {
 
 ipcMain.on('GET_PROFILE', async () => {
     const tokenResponse = await authProvider.getToken({
-        scopes: ["User.Read"]
+        scopes: ["User.Read"],
+        account: authProvider.account
     });
 
     try {
